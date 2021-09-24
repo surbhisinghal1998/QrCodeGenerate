@@ -1,0 +1,97 @@
+package com.solution.s.createqrcode;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.app.ActionBar;
+import android.app.Dialog;
+import android.graphics.Bitmap;
+import android.graphics.Typeface;
+import android.os.Bundle;
+import android.view.Gravity;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+
+public class MainActivity extends AppCompatActivity {
+    private Dialog QRDialog;
+    public static Typeface typeface;
+    public final static int WHITE = 0xFFFFFFFF;
+    public final static int BLACK = 0xFF000000;
+    public final static int WIDTH = 400;
+    public final static int HEIGHT = 400;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        scanMyQR("2");
+    }
+
+    private void scanMyQR(String STR) {
+
+        byte[] ciphertext = STR.getBytes();
+        String encodedQR = android.util.Base64.encodeToString(ciphertext, android.util.Base64.DEFAULT);
+
+        QRDialog = new Dialog(MainActivity.this, R.style.DialogTheme);
+        QRDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        QRDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        QRDialog.setContentView(R.layout.my_qr_code);
+        Window window = QRDialog.getWindow();
+        WindowManager.LayoutParams wlp = window.getAttributes();
+        wlp.gravity = Gravity.CENTER;
+        wlp.flags &= ~WindowManager.LayoutParams.FLAG_BLUR_BEHIND;
+        window.setAttributes(wlp);
+        QRDialog.show();
+        QRDialog.getWindow().setLayout(ActionBar.LayoutParams.FILL_PARENT, ActionBar.LayoutParams.MATCH_PARENT);
+        ImageView code = (ImageView) QRDialog.findViewById(R.id.myCode);
+        code.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                QRDialog.dismiss();
+            }
+        });
+
+
+        try {
+            Bitmap bitmap = encodeAsBitmap(encodedQR);
+            code.setImageBitmap(bitmap);
+        } catch (WriterException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+
+    Bitmap encodeAsBitmap(String str) throws WriterException {
+        BitMatrix result;
+        try {
+            result = new MultiFormatWriter().encode(str, BarcodeFormat.QR_CODE, WIDTH, HEIGHT, null);
+        } catch (IllegalArgumentException iae) {
+            return null;
+        }
+
+        int width = result.getWidth();
+        int height = result.getHeight();
+        int[] pixels = new int[width * height];
+        for (int y = 0; y < height; y++) {
+            int offset = y * width;
+            for (int x = 0; x < width; x++) {
+                pixels[offset + x] = result.get(x, y) ? BLACK : WHITE;
+            }
+        }
+
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+        return bitmap;
+    }
+
+}
